@@ -1,0 +1,89 @@
+﻿@section headSection
+{
+    <style type="text/css">
+        input
+        {
+            display: block;
+            margin: 5px;
+        }
+        
+        .score
+        {
+            font-weight: bold;
+            font-size: 18px;
+            margin-top: 20px;
+        }
+        
+        .score .result
+        {
+            color: #145E14;
+        }
+        
+        .score .title
+        {
+            margin-right: 5px;
+        }
+        
+        .error
+        {
+            color: red;
+            margin-top: 20px;
+        }
+    </style>
+    <script type="text/javascript" language="javascript">
+        $(function () {
+            var framesArray = [];
+            $('#calc-btn').on('click', function (e) {
+
+                if (framesArray.length == 12) {
+                    framesArray = [];
+                    $('.result').text("");
+                }
+
+                //Grab current frame's rolls
+                var firstRoll = $('#first-roll').val();
+                var secondRoll = $('#second-roll').val();
+
+                framesArray.push({ first: firstRoll, second: secondRoll });
+                $.cookie('framesArray', JSON.stringify(framesArray));
+
+                //Calculate and show the score
+                $.ajax({
+                    type: "POST",
+                    url: '@Url.Action("Calculate", "ScoreCalculator")',
+                    data: JSON.stringify({ frames: framesArray }),
+                    traditional: true,
+                    contentType: "application/json; charset=utf-8",
+                    success: function (result) {
+                        var prevScore = $('.result').text();
+                        var txtBeforeCurrent = (prevScore == '' ? '' : prevScore + ', ');
+                        var formattedRoundScore = 'Round' + '[' + 'First:' + firstRoll + ', ' + 'Second:' + secondRoll + ']' + ' = ' + result.score;
+
+                        $('.result').text(txtBeforeCurrent + formattedRoundScore);
+                    },
+                    error: function (xhr, errorType, exception) {
+                        var errorMessage = exception || xhr.statusText;
+                        $('.errorTxt').text('NOTE! Something happend: ' + errorMessage + '. HINT: ' + 'Game is over.');
+                    },
+                    dataType: 'json'
+                });
+            });
+        });
+    </script>
+}
+@{
+    ViewBag.Title = "Home";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+@model BowlingScore.ViewModels.Home.IndexViewModel
+<h2>
+    Bowling Score Calculator</h2>
+<span>First Roll:</span>@Html.TextBox("first-roll", 0)
+<span>Second Roll:</span>@Html.TextBox("second-roll", 0)
+<input type="button" id="calc-btn" value="Calculate Score!" />
+<div class="score">
+    <span class="result"></span>
+</div>
+<div class="error">
+    <span class="errorTxt"></span>
+</div>
